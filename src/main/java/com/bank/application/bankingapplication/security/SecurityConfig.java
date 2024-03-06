@@ -9,6 +9,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -31,19 +32,37 @@ public class SecurityConfig {
         try {
             http
                     .authorizeHttpRequests((authorize) -> {
-                        try {
-                            authorize
-                                    .requestMatchers("/api/accounts/login").permitAll()
-                                    .anyRequest().authenticated()
-                                    .and()
-                                    .httpBasic()
-                                    .and().csrf().disable();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
+                                try {
+                                    authorize
+                                            .anyRequest().authenticated()
+                                            .and()
+                                            .httpBasic()
+                                            .and()
+                                            .csrf()
+                                            .disable()
+                                            /*
+                                                 - By default user authentication are stored in http session.
+
+                                                 - HttpSession provides a way to identify a user across more than one
+                                                   page request or visit to a Web site and to store information about
+                                                   that user.
+
+                                                 - Since RestAPIs are independent and stateless, so while using postman
+                                                   httpsession will be unique and user need to do authentication on
+                                                   every endpoint. Hence, use .sessionManagement()
+                                                   .sessionCreationPolicy(SessionCreationPolicy.STATELESS) which
+                                                   tells spring to not create HTTP Session for storing user authentication.
+                                                   in place return token in response which can be used to be authenticated.
+                                                   when apis are hit from postman.
+                                                   When using web applications user authentication are stored in http session.
+                                            */
+                                            .sessionManagement()
+                                            .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
                     );
-            http.securityContext().securityContextRepository(securityContextRepository());
         } catch (Exception ex) {
             throw new RuntimeException("User not authenticated!");
         }
